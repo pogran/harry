@@ -1,0 +1,411 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Book {
+  id            Int          @id @default(autoincrement())
+  lastChapterId Int?         @unique
+  slug          String       @unique
+  type          EnBookType   @default(ANOTHER)
+  title         String
+  titleEn       String?
+  additionInfo  String?
+  desc          String?      @db.Text
+  robotDesc     String?      @db.Text
+  imageMid      String?
+  imageLow      String?
+  imageHigh     String?
+  isYaoi        Boolean      @default(false)
+  isHomo        Boolean      @default(false)
+  isHentai      Boolean      @default(false)
+  status        EnBookStatus @default(DRAFT)
+
+  newUploadAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  bookGenres      BookGenre[]
+  bookStatistic   BookStatistic?
+  bookSeries      BookSerie[]
+  bookTags        BookTag[]
+  bookCollections BookCollection[]
+  chapters        Chapter[]
+  parserBook      ParserBook?
+  bookmarks       Bookmark[]
+  lastChapter     Chapter?         @relation("lastChapter", fields: [lastChapterId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@map("books")
+}
+
+model BookGenre {
+  bookId  Int
+  genreId Int
+
+  book  Book  @relation(fields: [bookId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@id([bookId, genreId])
+  @@map("books_genres")
+}
+
+model Genre {
+  id    Int    @id @default(autoincrement())
+  title String
+
+  bookGenres BookGenre[]
+
+  @@map("genres")
+}
+
+model BookStatistic {
+  bookId    Int @id
+  bookmarks Int @default(0)
+  likes     Int @default(0)
+  views     Int @default(0)
+
+  book Book? @relation(fields: [bookId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@map("books_statistic")
+}
+
+model Serie {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+
+  bookSeries BookSerie[]
+  tags       Tag[]
+
+  @@map("series")
+}
+
+model BookSerie {
+  bookId  Int
+  serieId Int
+
+  book  Book  @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  serie Serie @relation(fields: [serieId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([bookId, serieId])
+  @@map("books_series")
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  serieId   Int?
+  title     String
+  type      EnTagType @default(GENERAL)
+  createdAt DateTime  @default(now())
+
+  serie    Serie?    @relation(fields: [serieId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  bookTags BookTag[]
+
+  @@map("tags")
+}
+
+model BookTag {
+  bookId Int
+  tagId  Int
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([bookId, tagId])
+  @@map("books_tags")
+}
+
+model Collection {
+  id                 Int      @id @default(autoincrement())
+  parentCollectionId Int?
+  slug               String   @unique
+  shortTitle         String
+  title              String
+  alternativeTitles  String?
+  desc               String?  @db.Text
+  robotDesc          String?  @db.Text
+  cover              String?
+  isHentai           Boolean  @default(false)
+  isYaoi             Boolean  @default(false)
+  isDispayMainPage   Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  parentCollection Collection?      @relation("parentCollection", fields: [parentCollectionId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+  childCollections Collection[]     @relation("parentCollection")
+  bookCollections  BookCollection[]
+
+  @@map("collections")
+}
+
+model Chapter {
+  id          Int             @id @default(autoincrement())
+  bookId      Int
+  title       String
+  number      String
+  tom         Int             @default(1)
+  index       Int
+  status      EnChapterStatus @default(NOT_ACTIVE)
+  likes       Int             @default(0)
+  createdAt   DateTime        @default(now())
+  publishedAt DateTime?
+
+  book             Book              @relation(fields: [bookId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  chapterStatistic ChapterStatistic?
+  userChapterLikes UserChapterLike[]
+  parserChapter    ParserChapter?
+  bookmark         Bookmark[]
+  bookLastChapter  Book?             @relation("lastChapter")
+  slide            Slide[]
+  chapterContent   ChapterContent?
+
+  @@map("chapters")
+}
+
+model ChapterStatistic {
+  chapterId Int  @id
+  likes     Int? @default(0)
+  views     Int? @default(0)
+
+  chapter Chapter? @relation(fields: [chapterId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@map("chapters_statistic")
+}
+
+model BookCollection {
+  bookId       Int
+  collectionId Int
+
+  book       Book       @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([bookId, collectionId])
+  @@map("books_collections")
+}
+
+model Slide {
+  id        Int      @id @default(autoincrement())
+  chapterId Int
+  link      String
+  index     Int
+  width     Int
+  height    Int
+  createdAt DateTime @default(now())
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("slides")
+}
+
+model ChapterContent {
+  chapterId Int    @unique
+  text      String @db.LongText
+  symbols   Int
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([chapterId])
+  @@map("chapters_content")
+}
+
+model UserChapterLike {
+  chapterId Int
+  userId    Int
+  createdAt DateTime @default(now())
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([chapterId, userId])
+  @@map("users_chapter_likes")
+}
+
+model Bookmark {
+  id           Int            @id @default(autoincrement())
+  bookId       Int
+  chapterId    Int
+  userId       Int
+  type         EnBookmarkType
+  customTypeId Int?
+  isHentai     Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime?      @updatedAt
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  book    Book    @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([chapterId, userId])
+  @@map("bookmarks")
+}
+
+model ParserBook {
+  id         Int           @id @default(autoincrement())
+  bookId     Int?          @unique
+  originalId Int
+  slug       String
+  title      String
+  source     EnParseSource
+  createdAt  DateTime      @default(now())
+
+  book           Book?           @relation(fields: [bookId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+  parserChapters ParserChapter[]
+
+  @@map("parser_books")
+}
+
+model ParserChapter {
+  id           Int      @id @default(autoincrement())
+  parserBookId Int
+  chapterId    Int?     @unique
+  originalId   Int
+  branchId     String?
+  title        String
+  createdAt    DateTime @default(now())
+
+  parserBook ParserBook @relation(fields: [parserBookId], references: [id])
+  chapter    Chapter?   @relation(fields: [chapterId], references: [id])
+
+  @@map("parser_chapters")
+}
+
+model User {
+  id           Int          @id @default(autoincrement())
+  email        String?      @unique
+  passwordHash String?
+  username     String       @unique
+  image        String?
+  role         EnRole       @default(USER)
+  status       EnUserStatus @default(NOT_CONFIRMED)
+  isAdult      Boolean?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime?    @updatedAt
+
+  chapterLikes UserChapterLike[]
+  bookmark     Bookmark[]
+  confirmEmail UserConfirmEmail[]
+  accounts     Account[]
+
+  @@map("users")
+}
+
+model Account {
+  id                   Int               @id @default(autoincrement())
+  userId               Int
+  provider             EnAccountProvider
+  providerAccountId    String
+  accessToken          String?           @db.Text
+  accessTokenExpiredAt DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Mail {
+  id           Int            @id @default(autoincrement())
+  to           String
+  site         String
+  template     EnMailTemplate
+  requestToken String         @unique
+  templateData String?        @db.Text
+  createdAt    DateTime       @default(now())
+  expiredAt    DateTime?
+
+  @@map("mails")
+}
+
+model UserConfirmEmail {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  code         Int
+  effort       Int      @default(0)
+  requestToken String   @unique
+  createdAt    DateTime @default(now())
+  expiredAt    DateTime
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("users_confirm_email")
+}
+
+enum EnBookmarkType {
+  READ      @map("read")
+  PLAN      @map("plan")
+  ABANDONED @map("abandoned")
+  COMPLETED @map("completed")
+  FAVORITE  @map("favorite")
+  CUSTOM    @map("custom")
+}
+
+enum EnBookType {
+  MANGA            @map("manga")
+  MANHWA           @map("manhwa")
+  MANHUA           @map("manhua")
+  WESTERN_COMIC    @map("western_comic")
+  RUS_COMIC        @map("rus_comic")
+  INDONESIAN_COMIC @map("indonesian_comic")
+  OEL              @map("oel")
+  ANOTHER          @map("another")
+}
+
+enum EnBookStatus {
+  NOT_FOUND @map("not_found")
+  DRAFT     @map("draft")
+  ACTIVE    @map("active")
+  ABANDONED @map("abandoned")
+  COMPLETED @map("completed")
+  LICENSED  @map("licensed")
+}
+
+enum EnTagType {
+  GENERAL    @map("general")
+  COLLECTION @map("collection")
+}
+
+enum EnChapterStatus {
+  ACTIVE     @map("active")
+  NOT_ACTIVE @map("not_active")
+}
+
+enum EnParseSource {
+  HENTAILIB  @map("hentailib")
+  REMANGA    @map("remanga")
+  MANGALIB   @map("mangalib")
+  HENTAICHAN @map("hentaichan")
+}
+
+enum EnUserStatus {
+  ACTIVE        @map("active")
+  BLOCKED       @map("blocked")
+  NOT_CONFIRMED @map("not_confirmed")
+}
+
+enum EnRole {
+  USER    @map("user")
+  AUTHOR  @map("author")
+  MANAGER @map("manager")
+  ADMIN   @map("admin")
+}
+
+enum EnMailTemplate {
+  CODE           @map("code")
+  RESET_PASSWORD @map("reset-password")
+}
+
+enum EnAccountProvider {
+  GOOGLE @map("google")
+  VK     @map("vk")
+}

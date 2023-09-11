@@ -1,0 +1,26 @@
+{
+  "version": "0.2",
+  "enabled": true,
+  "language": "en",
+  "allowCompoundWords": true,
+  "dictionaries": [
+    "src",
+    "prisma"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "messages",
+    ""
+  ],
+  "ignoreWords": [
+    "toastr",
+    "cn",
+    "Rosman",
+    "Mahaon"
+  ],
+  "words": [
+    "DDTHH",
+    "xn--80aai8ag.xn--80asehdb"
+
+  ]
+}
