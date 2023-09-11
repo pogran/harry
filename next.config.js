@@ -17,12 +17,7 @@ module.exports = withNextIntl(
     // },
     images: {
       formats: ['image/webp'],
-      domains: [
-        'xn--80afhl4affaesa.xn--80asehdb',
-        'xn--80aai8agdhw.xn--p1ai',
-        'mc.yandex.ru',
-        'localhost',
-      ],
+      domains: ['mc.yandex.ru', 'localhost'],
     },
     reactStrictMode: true,
     swcMinify: true,
